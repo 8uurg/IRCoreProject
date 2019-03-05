@@ -32,16 +32,17 @@
             <version>7.7.1</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>7.7.1</version>
-        </dependency>
-        <dependency>
             <groupId>ciir.umass.edu</groupId>
             <artifactId>RankLib</artifactId>
             <version>2.11</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/deps/RankLib-2.11.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.3.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

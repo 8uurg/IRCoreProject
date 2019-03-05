@@ -1,3 +1,5 @@
+import index.IndexFactory;
+import irproject.MostPopularCompletion;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
@@ -7,6 +9,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.IOUtils;
 
@@ -16,33 +19,14 @@ import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) throws IOException, ParseException {
-        Analyzer analyzer = new StandardAnalyzer();
-
-        Path indexPath = Files.createTempDirectory("tempIndex");
-        Directory directory = FSDirectory.open(indexPath);
-        IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        IndexWriter iwriter = new IndexWriter(directory, config);
-        Document doc = new Document();
-        String text = "This is the text to be indexed.";
-        doc.add(new Field("fieldname", text, TextField.TYPE_STORED));
-        iwriter.addDocument(doc);
-        iwriter.close();
-
-        // Now search the index:
-        DirectoryReader ireader = DirectoryReader.open(directory);
-        IndexSearcher isearcher = new IndexSearcher(ireader);
-        // Parse a simple query that searches for "text":
-        QueryParser parser = new QueryParser("fieldname", analyzer);
-        Query query = parser.parse("text");
-        ScoreDoc[] hits = isearcher.search(query, 10).scoreDocs;
-//        assertEquals(1, hits.length);
-        // Iterate through the results:
-        for (ScoreDoc hit : hits) {
-            Document hitDoc = isearcher.doc(hit.doc);
-//            assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
+        IndexSearcher s =  IndexFactory.ReadIndex();
+        MostPopularCompletion completion = new MostPopularCompletion();
+        completion.searcher = s;
+        TopDocs docs = completion.query("flights", 10);
+        for(ScoreDoc hitDoc : docs.scoreDocs) {
+            Document doc = s.doc(hitDoc.doc);
+            System.out.println(doc.get("query"));
+            //assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
         }
-        ireader.close();
-        directory.close();
-        IOUtils.rm(indexPath);
     }
 }
