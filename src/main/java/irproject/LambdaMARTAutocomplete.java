@@ -7,7 +7,6 @@ import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.metric.ReciprocalRankScorer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -17,7 +16,6 @@ import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
@@ -30,13 +28,14 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     private LambdaMART reranker;
 
     // Note: make sure you actually use all the features you want to use!
-    private int[] usedfeatures = new int[]{};
+    private int[] usedfeatures = new int[]{0, 1, 2, 3, 4};
     private MetricScorer scorer = new ReciprocalRankScorer();
 
     public String[] query(String query, int n, int n_before_reranking) throws IOException {
         if ( reranker == null ) {
             throw new RuntimeException("Please train or load the reranker before usage.");
         }
+        // We do not know the original query in this case. So originalquery is the empty string.
         RankList rankList = this.queryToRankList(query, "", n_before_reranking);
         RankList rankedList = reranker.rank(rankList);
         int n2 = rankedList.size();
