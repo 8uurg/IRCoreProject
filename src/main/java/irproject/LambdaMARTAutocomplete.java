@@ -34,6 +34,9 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     private MetricScorer scorer = new ReciprocalRankScorer();
 
     public String[] query(String query, int n, int n_before_reranking) throws IOException {
+        if ( reranker == null ) {
+            throw new RuntimeException("Please train or load the reranker before usage.");
+        }
         RankList rankList = this.queryToRankList(query, "", n_before_reranking);
         RankList rankedList = reranker.rank(rankList);
         int n2 = rankedList.size();
@@ -71,8 +74,16 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return reranker.model();
     }
 
-    public float[] extractFeatures(String document) {
-        return new float[]{};
+    public float[] extractFeatures(Document document, String query) {
+        // Amount of occurences feature
+        float occurences = document.getField("amount").numericValue().floatValue();
+        // Ends with space
+        String docQuery = document.getField("query").stringValue();
+        float prefix_length = query.length();
+        float total_length = docQuery.length();
+        float suffix_length = total_length - prefix_length;
+        float endsinspace = query.endsWith(" ")?1.0f:0.0f;
+        return new float[]{occurences, prefix_length, suffix_length, total_length, endsinspace};
     }
 
     public float getRelevance(String query, String document) {
@@ -95,7 +106,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             docDataPoint.append(scoreDoc.doc);
             docDataPoint.append(' ');
             // All successive floating point values are features.
-            for (float feature : extractFeatures(docQuery)) {
+            for (float feature : extractFeatures(document, query)) {
                 docDataPoint.append(feature);
                 docDataPoint.append(' ');
             }
