@@ -32,9 +32,8 @@ public class Main {
 
     public static void searchFor(String input) throws IOException {
         IndexSearcher s =  IndexFactory.ReadIndex();
-        MostPopularCompletion completion = new MostPopularCompletion();
-        completion.searcher = s;
-        TopDocs docs = completion.query(input, 10);
+        MostPopularCompletion completion = new MostPopularCompletion(s);
+        TopDocs docs = completion.fullQuery(input, 10);
         for(ScoreDoc hitDoc : docs.scoreDocs) {
             Document doc = s.doc(hitDoc.doc);
             System.out.print(doc.get("query"));

@@ -42,8 +42,7 @@ class IndexFactoryTest {
                 new DataReader(GetFile("user-ct-test-collection-06.txt")),
                 new DataReader(GetFile("user-ct-test-collection-07.txt")),
                 new DataReader(GetFile("user-ct-test-collection-08.txt")),
-                new DataReader(GetFile("user-ct-test-collection-09.txt")),
-                new DataReader(GetFile("user-ct-test-collection-10.txt"))));
+                new DataReader(GetFile("user-ct-test-collection-09.txt"))));
     }
 
     private String GetFile(String name) {

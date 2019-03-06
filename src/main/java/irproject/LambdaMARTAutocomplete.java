@@ -17,13 +17,13 @@ import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
-public class LambdaMARTAutocomplete {
+public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
 //    Uses learning-to-rank, which I am not familiar with just yet.
-    public LambdaMARTAutocomplete(DirectoryReader reader) {
-        this.searcher = new IndexSearcher(reader);
+    public LambdaMARTAutocomplete(IndexSearcher searcher) {
+        this.searcher = searcher;
     }
 
     private IndexSearcher searcher;
@@ -46,8 +46,13 @@ public class LambdaMARTAutocomplete {
     }
 
     // Query without reranking.
-    public TopDocs simplequery(String query, int n) throws IOException {
-        return searcher.search(new PrefixQuery(new Term("query", query)), n);
+    public TopDocs simplequery(String query, int n) {
+        try {
+            return searcher.search(new PrefixQuery(new Term("query", query)), n);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
@@ -113,5 +118,14 @@ public class LambdaMARTAutocomplete {
         reranker = new LambdaMART(samples, this.usedfeatures, this.scorer);
         reranker.init();
         reranker.learn();
+    }
+
+    @Override
+    public String[] query(String query, int n) {
+        try {
+            return query(query, n, n);
+        } catch (IOException e) {
+            return new String[]{};
+        }
     }
 }
