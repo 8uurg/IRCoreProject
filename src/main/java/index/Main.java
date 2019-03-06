@@ -1,3 +1,5 @@
+package index;
+
 import index.IndexFactory;
 import irproject.MostPopularCompletion;
 import org.apache.lucene.analysis.Analyzer;
@@ -16,17 +18,27 @@ import org.apache.lucene.util.IOUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        String search = null;
+        System.out.println("What are you looking for?");
+        while (!(search = scanner.nextLine()).equals("q")) {
+            searchFor(search);
+        }
+    }
+
+    public static void searchFor(String input) throws IOException {
         IndexSearcher s =  IndexFactory.ReadIndex();
         MostPopularCompletion completion = new MostPopularCompletion();
         completion.searcher = s;
-        TopDocs docs = completion.query("flights", 10);
+        TopDocs docs = completion.query(input, 10);
         for(ScoreDoc hitDoc : docs.scoreDocs) {
             Document doc = s.doc(hitDoc.doc);
-            System.out.println(doc.get("query"));
-            //assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
+            System.out.print(doc.get("query"));
+            System.out.println(" - " + doc.get("amount"));
         }
     }
 }
