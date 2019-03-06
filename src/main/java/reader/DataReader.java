@@ -9,8 +9,10 @@ public class DataReader {
 
     BufferedReader br = null;
     FileReader fr = null;
+    String name;
 
     public DataReader(String filename) throws IOException {
+        name = filename;
         fr = new FileReader(filename);
         br = new BufferedReader(fr);
         br.readLine();
@@ -43,12 +45,17 @@ public class DataReader {
     public static SearchQuery Parse(String input) {
         String[] parts = input.split("\t");
         SearchQuery query = new SearchQuery();
-        query.ID = Integer.parseInt(parts[0]);
+        try {
+            query.ID = Integer.parseInt(parts[0]);
+        } catch (NumberFormatException ignored) {}
+
         query.Query = parts[1];
         query.DateTime = parts[2];
 
         if(parts.length > 3) {
-            query.ClickedUrlRank = Integer.parseInt(parts[3]);
+            try {
+                query.ClickedUrlRank = Integer.parseInt(parts[3]);
+            } catch (NumberFormatException ignored) {}
             query.ClickedUrl = parts[4];
         }
         return query;
