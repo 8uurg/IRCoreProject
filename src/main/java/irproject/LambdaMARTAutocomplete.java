@@ -6,6 +6,11 @@ import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.metric.ReciprocalRankScorer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -15,20 +20,32 @@ import org.apache.lucene.search.TopDocs;
 
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
 //    Uses learning-to-rank, which I am not familiar with just yet.
-    public LambdaMARTAutocomplete(IndexSearcher searcher) {
-        this.searcher = searcher;
+    public LambdaMARTAutocomplete(IndexSearcher suffixsearcher, IndexSearcher ngramsearcher) {
+        this.suffixsearcher = suffixsearcher;
+        if (ngramsearcher == null) {
+            usedfeatures = new int[]{0, 1, 2, 3, 4};
+        } else {
+            this.ngramsearcher = ngramsearcher;
+            // Can actually compute and use ngram feature!
+            usedfeatures = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        }
     }
 
-    private IndexSearcher searcher;
+    private IndexSearcher suffixsearcher;
+    private IndexSearcher ngramsearcher;
+
     private LambdaMART reranker;
 
     // Note: make sure you actually use all the features you want to use!
-    private int[] usedfeatures = new int[]{0, 1, 2, 3, 4};
+    private int[] usedfeatures;
     private MetricScorer scorer = new ReciprocalRankScorer();
 
     public String[] query(String query, int n, int n_before_reranking) throws IOException {
@@ -47,10 +64,24 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return result;
     }
 
+    private final String regex = "[^\\s]+\\s?$";
+    private final Pattern pattern = Pattern.compile(regex);
+
+    private String getEndTerm(String query) {
+        Matcher m = pattern.matcher(query);
+        boolean foundEndTerm = m.find();
+        if (foundEndTerm) {
+            return m.group();
+        } else {
+            return "";
+        }
+    }
+
     // Query without reranking.
     public TopDocs simplequery(String query, int n) {
         try {
-            return searcher.search(new PrefixQuery(new Term("query", query)), n);
+            // TODO: Sort?
+            return suffixsearcher.search(new PrefixQuery(new Term("query", getEndTerm(query))), n);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -73,16 +104,47 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return reranker.model();
     }
 
-    public float[] extractFeatures(Document document, String query) {
+    public float[] extractFeatures(Document document, String query) throws IOException {
         // Amount of occurences feature
         float occurences = document.getField("amount").numericValue().floatValue();
         // Ends with space
         String docQuery = document.getField("query").stringValue();
+        String endTerm = getEndTerm(query);
         float prefix_length = query.length();
-        float total_length = docQuery.length();
-        float suffix_length = total_length - prefix_length;
+        float suffix_length = docQuery.length();
+        float total_length = prefix_length + suffix_length - endTerm.length();
         float endsinspace = query.endsWith(" ")?1.0f:0.0f;
-        return new float[]{occurences, prefix_length, suffix_length, total_length, endsinspace};
+        if (ngramsearcher == null) {
+            return new float[]{occurences, prefix_length, suffix_length, total_length, endsinspace};
+        } else {
+            float[] features = new float[]{occurences, prefix_length, suffix_length, total_length, endsinspace, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+            String fullquery = query.subSequence(0, query.length() - endTerm.length()).toString();
+            for (int i = 0; i < 6; i++) {
+                // We already have 5 features.
+                features[i+5] = calculateNGramFeature(fullquery, i+1);
+            }
+            return features;
+        }
+    }
+
+    public float calculateNGramFeature(String fullquery, int n) throws IOException {
+        StandardTokenizer source = new StandardTokenizer();
+        source.setReader(new StringReader(fullquery));
+        ShingleFilter shingleFilter = new ShingleFilter(source, n, n);
+        shingleFilter.setOutputUnigrams(false);
+
+        CharTermAttribute charTermAttribute = shingleFilter.addAttribute(CharTermAttribute.class);
+        shingleFilter.setOutputUnigrams(false);
+
+        // Use long, frequency is the number of occurences.
+        long result = 0L;
+        shingleFilter.reset();
+        while(shingleFilter.incrementToken()) {
+            String token = charTermAttribute.toString();
+            result += ngramsearcher.getIndexReader().getSumTotalTermFreq(token);
+        }
+        // Cast to float, as features are required to be floats.
+        return (float) result;
     }
 
     public float getRelevance(String query, String document) {
@@ -94,7 +156,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         ScoreDoc[] scoreDocs = docs.scoreDocs;
         ArrayList<DataPoint> dataPoints = new ArrayList<>();
         for (ScoreDoc scoreDoc : scoreDocs) {
-            Document document = searcher.doc(scoreDoc.doc);
+            Document document = suffixsearcher.doc(scoreDoc.doc);
             // Build a string for the DenseDataPoint to parse again...
             StringBuilder docDataPoint = new StringBuilder();
             String docQuery = document.get("query");
