@@ -1,0 +1,79 @@
+---
+uti: com.xamarin.workbook
+id: 35a66849-d40c-4aee-a267-6f1a0246c49f
+title: DoubleQ
+platforms:
+- DotNetCore
+---
+
+```csharp
+public class SearchQuery {
+    public int ID;
+    public String Query;
+    public String DateTime;
+    public int ClickedUrlRank;
+    public String ClickedUrl;
+
+    public SearchQuery() {
+        ClickedUrlRank = -1;
+    }
+}
+```
+
+```csharp
+public static SearchQuery Parse(String input) {
+    String[] parts = input.Split("\t");
+    SearchQuery query = new SearchQuery();
+    try {
+        query.ID = int.Parse(parts[0]);
+    } catch (Exception ignored) {
+        query.ID = -1;
+    }
+
+    query.Query = parts[1];
+    query.DateTime = parts[2];
+
+    if(parts.Length > 3) {
+        try {
+            query.ClickedUrlRank = int.Parse(parts[3]);
+        } catch (Exception ignored) {}
+        query.ClickedUrl = parts[4];
+    }
+    return query;
+}
+```
+
+```csharp
+int counter = 0;  
+string line;  
+  
+// Read the file and display it line by line.  
+System.IO.StreamReader file =   
+    new System.IO.StreamReader(@"C:\Users\martijn\Coding\IRCoreProject\src\main\resources\full.txt");  
+
+List<string> queries = new List<string>();
+int doubleQ = 0;
+int userId = -1;
+
+while((line = file.ReadLine()) != null)  
+{  
+    var q = Parse(line);
+    if(userId != q.ID) {
+        userId = q.ID;
+        queries = new List<string>();
+    }
+
+    if(queries.Contains(q.Query)) {
+        doubleQ++;
+    }
+
+    queries.Add(q.Query);
+
+    counter++;  
+}  
+  
+file.Close();  
+System.Console.WriteLine("There were {0} lines.", counter);  
+System.Console.WriteLine($"There were {doubleQ} doubles.");  
+  
+```
