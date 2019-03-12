@@ -2,24 +2,26 @@ package index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.store.*;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import reader.DataReader;
 import reader.SearchQuery;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 
 public class IndexFactory {
@@ -27,30 +29,89 @@ public class IndexFactory {
         Analyzer analyzer = new KeywordAnalyzer();
 
         Path indexPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "QueryIndex"));
-        Directory directory = FSDirectory.open(indexPath);
+        Path prefixPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "PrefixIndex"));
+        Path ngramPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "NgramIndex"));
+        Directory indexDirectory = FSDirectory.open(indexPath);
+        Directory prefixDirectory = FSDirectory.open(prefixPath);
+        Directory ngramDirectory = FSDirectory.open(ngramPath);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        IndexWriter iwriter = new IndexWriter(directory, config);
+        IndexWriterConfig config2 = new IndexWriterConfig(analyzer);
+        IndexWriterConfig config3 = new IndexWriterConfig(analyzer);
+        IndexWriter iwriter = new IndexWriter(indexDirectory, config);
+        IndexWriter pwriter = new IndexWriter(prefixDirectory, config2);
+        IndexWriter nwriter = new IndexWriter(ngramDirectory, config3);
 
         HashMap<String, Integer> map = new HashMap<>();
+        HashMap<String, Integer> prefixMap = new HashMap<>();
+        HashMap<String, Integer> ngramMap = new HashMap<>();
         for(DataReader reader : readers) {
             Preprocess(reader, map);
         }
 
+        //Remove - from indeces
+        map.remove("-");
+
         int amount = 0;
 
         for (String key : map.keySet()) {
+            Integer oc = map.get(key);
             if (amount < 10) {
-                System.out.println(key + " - " + map.get(key));
+                System.out.println(key + " - " + oc);
                 amount++;
             }
-            Document doc = new Document();
-            doc.add(new Field("query", key, TextField.TYPE_STORED));
-            doc.add(new NumericDocValuesField("amount", map.get(key)));
-            doc.add(new StoredField("amount", map.get(key)));
-            iwriter.addDocument(doc);
+            AddToIndex(iwriter, key, oc);
+            NgramPreprocess(key, oc, ngramMap);
+            PrefixPreprocess(key, oc, prefixMap);
+        }
+
+        for(String key : ngramMap.keySet()) {
+            AddToIndex(nwriter, key, ngramMap.get(key));
+        }
+
+        for(String key : prefixMap.keySet()) {
+            AddToIndex(pwriter, key, prefixMap.get(key));
         }
 
         iwriter.close();
+        pwriter.close();
+        nwriter.close();
+    }
+
+    public static void NgramPreprocess(String key, int val, HashMap<String, Integer> ngramMap) throws IOException {
+        StandardTokenizer source = new StandardTokenizer();
+        source.setReader(new StringReader(key));
+        ShingleFilter shingleFilter = new ShingleFilter(source, 2, 6);
+
+        CharTermAttribute charTermAttribute = shingleFilter.addAttribute(CharTermAttribute.class);
+
+        // Use long, frequency is the number of occurences.
+        long result = 0L;
+        shingleFilter.reset();
+        while(shingleFilter.incrementToken()) {
+            String token = charTermAttribute.toString();
+            int valu =  ngramMap.getOrDefault(token, 0);
+            ngramMap.put(token, valu + val);
+        }
+    }
+
+    public  static void PrefixPreprocess(String key, int value, HashMap<String, Integer> prefixMap) {
+        List<String> list2 = Arrays.asList(key.split(" "));
+        Collections.reverse(list2);
+        ArrayList<String> list = new ArrayList<String>(list2);
+        String soFar = "";
+        while(list.size() > 0) {
+            soFar = list.remove(0) + " " + soFar;
+            int val = prefixMap.getOrDefault(soFar, 0);
+            prefixMap.put(soFar, val + value);
+        }
+    }
+
+    private static void AddToIndex(IndexWriter iwriter, String key, int value) throws IOException {
+        Document doc = new Document();
+        doc.add(new Field("query", key, TextField.TYPE_STORED));
+        doc.add(new NumericDocValuesField("amount", value));
+        doc.add(new StoredField("amount", value));
+        iwriter.addDocument(doc);
     }
 
     public static void Preprocess(DataReader reader, HashMap<String, Integer> map) throws IOException {
@@ -61,14 +122,16 @@ public class IndexFactory {
         }
     }
 
-    public static IndexSearcher ReadIndex() throws IOException {
-        Directory directory = FSDirectory.open(Paths.get(System.getProperty("java.io.tmpdir") + "QueryIndex"));
+    public static IndexSearcher ReadIndex(String name) throws IOException {
+        Directory directory = FSDirectory.open(Paths.get(System.getProperty("java.io.tmpdir") + name));
         DirectoryReader ireader = DirectoryReader.open(directory);
         return new IndexSearcher(ireader);
     }
 
     public static void DeleteIfExists() throws IOException {
         delete(new File(System.getProperty("java.io.tmpdir") + "QueryIndex"));
+        delete(new File(System.getProperty("java.io.tmpdir") + "PrefixIndex"));
+        delete(new File(System.getProperty("java.io.tmpdir") + "NgramIndex"));
     }
 
     private static void delete(File file)
@@ -107,7 +170,7 @@ public class IndexFactory {
         }else{
             //if file, then delete it
             file.delete();
-            System.out.println("File is deleted : " + file.getAbsolutePath());
+            //System.out.println("File is deleted : " + file.getAbsolutePath());
         }
     }
 }

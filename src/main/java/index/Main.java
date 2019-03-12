@@ -31,7 +31,7 @@ public class Main {
     }
 
     public static void searchFor(String input) throws IOException {
-        IndexSearcher s =  IndexFactory.ReadIndex();
+        IndexSearcher s =  IndexFactory.ReadIndex("PrefixIndex");
         MostPopularCompletion completion = new MostPopularCompletion(s);
         TopDocs docs = completion.fullQuery(input, 10);
         for(ScoreDoc hitDoc : docs.scoreDocs) {

@@ -30,7 +30,7 @@ public abstract class BaseTest {
         SearchQuery query;
         int total = 0;
         int correct = 0;
-        IndexSearcher s = IndexFactory.ReadIndex();
+        IndexSearcher s = IndexFactory.ReadIndex("QueryIndex");
         ICompletionAlgorithm alg = GetAlgorithm(s);
 
         for (int i = 0; i < 2000; i++) {
