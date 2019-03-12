@@ -2,10 +2,7 @@ package analysis;
 
 import index.IndexFactory;
 import irproject.ICompletionAlgorithm;
-import irproject.MostPopularCompletion;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TopDocs;
 import org.junit.jupiter.api.Test;
 import reader.DataReader;
 import reader.SearchQuery;
@@ -17,7 +14,9 @@ import java.util.Random;
 public abstract class BaseTest {
     abstract ICompletionAlgorithm GetAlgorithm(IndexSearcher searcher);
 
-    Random r = new Random(123123123);
+    private long randomSeed = 123123123;
+
+    Random r = new Random(randomSeed);
 
     @Test
     public void Test() throws IOException {
@@ -59,6 +58,10 @@ public abstract class BaseTest {
             return s;
         }
         return s.substring(0, r.nextInt(s.length()-1) + 1);
+    }
+
+    public void resetSeed() {
+        r.setSeed(randomSeed);
     }
 
     private String GetFile(String name) {

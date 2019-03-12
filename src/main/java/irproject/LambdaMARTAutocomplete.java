@@ -6,8 +6,6 @@ import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.metric.ReciprocalRankScorer;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -44,16 +42,19 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
     private LambdaMART reranker;
 
+    // Amount of items to retrieve before re-ranking.
+    private int nRerank = 100;
+
     // Note: make sure you actually use all the features you want to use!
     private int[] usedfeatures;
     private MetricScorer scorer = new ReciprocalRankScorer();
 
-    public String[] query(String query, int n, int n_before_reranking) throws IOException {
+    public String[] queryit(String query, int n) throws IOException {
         if ( reranker == null ) {
             throw new RuntimeException("Please train or load the reranker before usage.");
         }
         // We do not know the original query in this case. So originalquery is the empty string.
-        RankList rankList = this.queryToRankList(query, "", n_before_reranking);
+        RankList rankList = this.queryToRankList(query, "");
         RankList rankedList = reranker.rank(rankList);
         int n2 = rankedList.size();
         int an = Math.min(n, n2);
@@ -151,8 +152,8 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return query.equals(document)?1.0f:0.0f;
     }
 
-    protected RankList queryToRankList(String query, String originalQuery, int n) throws IOException {
-        TopDocs docs = this.simplequery(query, n);
+    protected RankList queryToRankList(String query, String originalQuery) throws IOException {
+        TopDocs docs = this.simplequery(query, nRerank);
         ScoreDoc[] scoreDocs = docs.scoreDocs;
         ArrayList<DataPoint> dataPoints = new ArrayList<>();
         for (ScoreDoc scoreDoc : scoreDocs) {
@@ -177,13 +178,13 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return new RankList(dataPoints);
     }
 
-    public void train(String[] queries, String[] originalQueries, int n) throws IOException {
+    public void train(String[] queries, String[] originalQueries) throws IOException {
         // Turn the queries into data.
         ArrayList<RankList> samples = new ArrayList<RankList>();
         for (int i = 0; (i < queries.length) && (i < originalQueries.length); i++) {
             String query = queries[i];
             String originalQuery = originalQueries[i];
-            RankList rankList = this.queryToRankList(query, originalQuery, n);
+            RankList rankList = this.queryToRankList(query, originalQuery);
             samples.add(rankList);
         }
 
@@ -195,7 +196,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     @Override
     public String[] query(String query, int n) {
         try {
-            return query(query, n, n);
+            return queryit(query, n);
         } catch (IOException e) {
             return new String[]{};
         }
