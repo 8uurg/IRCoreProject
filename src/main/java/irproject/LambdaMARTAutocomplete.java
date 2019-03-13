@@ -12,10 +12,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 
 
 import java.io.IOException;
@@ -29,6 +26,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 //    Uses learning-to-rank, which I am not familiar with just yet.
     public LambdaMARTAutocomplete(IndexSearcher suffixsearcher, IndexSearcher ngramsearcher) {
         this.suffixsearcher = suffixsearcher;
+
+        scorer = new ReciprocalRankScorer();
+        scorer.setK(10);
+
         if (ngramsearcher == null) {
             usedfeatures = new int[]{1, 2, 3, 4, 5};
         } else {
@@ -48,7 +49,8 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
     // Note: make sure you actually use all the features you want to use!
     private int[] usedfeatures;
-    private MetricScorer scorer = new ReciprocalRankScorer();
+
+    private MetricScorer scorer;
 
     public String[] queryit(String query, int n) throws IOException {
         if ( reranker == null ) {
@@ -81,10 +83,14 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
 
     // Query without reranking.
     public TopDocs simplequery(String query, int n) {
+        Sort s = new Sort(new SortField("amount", new FieldComparatorSource() {
+            @Override
+            public FieldComparator<?> newComparator(String s, int i, int i1, boolean b) {
+                return new FieldComparator.IntComparator(i, s, i1);
+            }
+        }, true));
         try {
-            // TODO: Sort?
-            TopDocs td = suffixsearcher.search(new PrefixQuery(new Term("query", getEndTerm(query))), n);
-
+            TopDocs td = suffixsearcher.search(new PrefixQuery(new Term("query", getEndTerm(query))), n, s);
             return td;
         } catch (IOException e) {
             e.printStackTrace();
@@ -198,8 +204,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
                 i += 1;
             }
             DenseDataPoint dp = new DenseDataPoint(docDataPoint.toString());
-            if (dp.getFeatureValue(2) != features[1])
-                System.out.println("Panic!");
+            dp.setLabel(relevance);
             dataPoints.add(dp);
         }
 
@@ -226,6 +231,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         if(samples.size() == 0) {
             throw new RuntimeException("Make sure at least one valid (has items, has at least one relevant item) sample is present.");
         }
+
+        double scorey = this.scorer.score(samples);
+
+        System.out.println("Starting training with " + samples.size() + " samples worth of ranked lists. RR of initial lists is " + scorey + ".");
 
         reranker = new LambdaMART(samples, this.usedfeatures, this.scorer);
         reranker.init();
