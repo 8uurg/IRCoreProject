@@ -9,7 +9,9 @@ import java.io.IOException;
 
 public class MostPopularCompletionTest extends BaseTest {
     @Override
-    ICompletionAlgorithm GetAlgorithm(IndexSearcher searcher) {
+    ICompletionAlgorithm GetAlgorithm() throws IOException {
+
+        IndexSearcher searcher = IndexFactory.ReadIndex("QueryIndex");
         return new MostPopularCompletion(searcher);
     }
 }

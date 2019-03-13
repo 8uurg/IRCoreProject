@@ -8,14 +8,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 
-public class LambdaMARTCompletionTestNoNGram extends BaseTest {
+public class LambdaMARTCompletionTestNGram extends BaseTest {
     private String modelStoragePath = System.getProperty("java.io.tmpdir") + "LambdaMART/LambdaMARTNoNGram.txt";
 
     @Override
     ICompletionAlgorithm GetAlgorithm() throws IOException {
 
         IndexSearcher searcher = IndexFactory.ReadIndex("PrefixIndex");
-        LambdaMARTAutocomplete autocomplete = new LambdaMARTAutocomplete(searcher, null);
+        IndexSearcher ngramsearcher = IndexFactory.ReadIndex("NgramIndex");
+        LambdaMARTAutocomplete autocomplete = new LambdaMARTAutocomplete(searcher, ngramsearcher);
         // Load the model
         try {
             BufferedReader reader = new BufferedReader(new FileReader(new File(modelStoragePath)));

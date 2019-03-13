@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public abstract class BaseTest {
-    abstract ICompletionAlgorithm GetAlgorithm(IndexSearcher searcher);
+    abstract ICompletionAlgorithm GetAlgorithm() throws IOException;
 
     private long randomSeed = 123123123;
 
@@ -29,8 +29,7 @@ public abstract class BaseTest {
         SearchQuery query;
         int total = 0;
         int correct = 0;
-        IndexSearcher s = IndexFactory.ReadIndex("QueryIndex");
-        ICompletionAlgorithm alg = GetAlgorithm(s);
+        ICompletionAlgorithm alg = GetAlgorithm();
 
         for (int i = 0; i < 2000; i++) {
             query = reader.ReadLine();
