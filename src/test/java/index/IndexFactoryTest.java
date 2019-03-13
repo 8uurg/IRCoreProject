@@ -24,8 +24,6 @@ class IndexFactoryTest {
     void Test() throws IOException {
         IndexFactory.DeleteIfExists();
         IndexFactory.CreateIndex(Collections.singletonList(reader));
-        Main.main(new String[]{});
-        double d = 0.0;
     }
 
     @Test
