@@ -45,6 +45,8 @@ public static SearchQuery Parse(String input) {
 
 ```csharp
 int counter = 0;  
+int charCount = 0;
+int tokenCount = 0;
 string line;  
   
 // Read the file and display it line by line.  
@@ -68,12 +70,15 @@ while((line = file.ReadLine()) != null)
     }
 
     queries.Add(q.Query);
+    charCount += line.Length;
+    tokenCount += line.Split(" ").Length;
 
     counter++;  
 }  
   
 file.Close();  
 System.Console.WriteLine("There were {0} lines.", counter);  
-System.Console.WriteLine($"There were {doubleQ} doubles.");  
-  
+System.Console.WriteLine($"There were {doubleQ} doubles.");
+System.Console.WriteLine($"There were {charCount} characters.");
+System.Console.WriteLine($"There were {tokenCount} tokenss.");
 ```

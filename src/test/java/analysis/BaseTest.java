@@ -54,6 +54,7 @@ public abstract class BaseTest {
     }
 
     public String CutOff(String s) {
+        //TODO keep first word
         if(s.length() <= 1 ){
             return s;
         }

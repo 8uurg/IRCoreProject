@@ -60,16 +60,8 @@ public class IndexFactory {
                 amount++;
             }
             AddToIndex(iwriter, key, oc);
-            NgramPreprocess(key, oc, ngramMap);
-            PrefixPreprocess(key, oc, prefixMap);
-        }
-
-        for(String key : ngramMap.keySet()) {
-            AddToIndex(nwriter, key, ngramMap.get(key));
-        }
-
-        for(String key : prefixMap.keySet()) {
-            AddToIndex(pwriter, key, prefixMap.get(key));
+            NgramPreprocess(nwriter, key, oc);
+            SuffixPreprocess(pwriter, key, oc);
         }
 
         iwriter.close();
@@ -77,7 +69,7 @@ public class IndexFactory {
         nwriter.close();
     }
 
-    public static void NgramPreprocess(String key, int val, HashMap<String, Integer> ngramMap) throws IOException {
+    public static void NgramPreprocess(IndexWriter nwriter, String key, int val) throws IOException {
         StandardTokenizer source = new StandardTokenizer();
         source.setReader(new StringReader(key));
         ShingleFilter shingleFilter = new ShingleFilter(source, 2, 6);
@@ -89,20 +81,22 @@ public class IndexFactory {
         shingleFilter.reset();
         while(shingleFilter.incrementToken()) {
             String token = charTermAttribute.toString();
-            int valu =  ngramMap.getOrDefault(token, 0);
-            ngramMap.put(token, valu + val);
+            for (int i = 0; i < val; i++) {
+                AddToIndex(nwriter, token, 1);
+            }
         }
     }
 
-    public  static void PrefixPreprocess(String key, int value, HashMap<String, Integer> prefixMap) {
+    public  static void SuffixPreprocess(IndexWriter pwriter, String key, int value) throws IOException {
         List<String> list2 = Arrays.asList(key.split(" "));
         Collections.reverse(list2);
         ArrayList<String> list = new ArrayList<String>(list2);
         String soFar = "";
         while(list.size() > 0) {
             soFar = list.remove(0) + " " + soFar;
-            int val = prefixMap.getOrDefault(soFar, 0);
-            prefixMap.put(soFar, val + value);
+            for (int i = 0; i < value; i++) {
+                AddToIndex(pwriter, soFar, 1);
+            }
         }
     }
 

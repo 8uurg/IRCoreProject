@@ -10,8 +10,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class IndexFactoryTest {
 
     Document document;
@@ -47,14 +45,14 @@ class IndexFactoryTest {
     @Test
     void testNgram() throws IOException {
         HashMap<String, Integer> map = new HashMap<>();
-        IndexFactory.NgramPreprocess("Consectetur alias atque aliquam", 0, map);
+        //IndexFactory.NgramPreprocess(nwriter, "Consectetur alias atque aliquam", 0);
         boolean b= true;
     }
 
     @Test
     void testPrefix() throws IOException {
         HashMap<String, Integer> map = new HashMap<>();
-        IndexFactory.PrefixPreprocess("Consectetur alias atque aliquam", 0, map);
+        //IndexFactory.SuffixPreprocess(pwriter, "Consectetur alias atque aliquam", 0);
         boolean b= true;
     }
 
