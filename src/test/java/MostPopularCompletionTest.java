@@ -1,5 +1,3 @@
-package analysis;
-
 import index.IndexFactory;
 import irproject.ICompletionAlgorithm;
 import irproject.MostPopularCompletion;

@@ -1,5 +1,3 @@
-package analysis;
-
 import ciir.umass.edu.learning.tree.LambdaMART;
 import index.IndexFactory;
 import irproject.ICompletionAlgorithm;
@@ -10,7 +8,11 @@ import org.junit.jupiter.api.Test;
 import java.io.*;
 
 public class LambdaMARTCompletionTestNoNGram extends BaseTest {
-    private String modelStoragePath = System.getProperty("java.io.tmpdir") + "LambdaMART/LambdaMARTNoNGram.txt";
+    public static int CHEATNUMBER = 100;
+
+    public String GetModelStoragePath() {
+        return System.getProperty("java.io.tmpdir") + "LambdaMART/LambdaMARTNoNGram" +CHEATNUMBER + ".txt";
+    }
 
     @Override
     ICompletionAlgorithm GetAlgorithm() throws IOException {
@@ -19,7 +21,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
         LambdaMARTAutocomplete autocomplete = new LambdaMARTAutocomplete(searcher, null);
         // Load the model
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(new File(modelStoragePath)));
+            BufferedReader reader = new BufferedReader(new FileReader(new File(GetModelStoragePath())));
             StringBuilder lines = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -40,17 +42,17 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
         IndexSearcher searcher = IndexFactory.ReadIndex("SuffixIndex");
         LambdaMARTAutocomplete lambdaMART = new LambdaMARTAutocomplete(searcher, null);
         String[] originalqueries = this.getTrainingQueries();
-        String[] queries = new String[originalqueries.length];
+        String[] queries = new String[CHEATNUMBER];
         // Actually generate the cut off queries.
         resetSeed();
-        for (int i = 0; i < originalqueries.length; i++) {
+        for (int i = 0; i < CHEATNUMBER; i++) {
             queries[i] =  this.CutOff(originalqueries[i]);
         }
         resetSeed();
         // Actually call training method.
         lambdaMART.train(queries, originalqueries);
         // Dump result of training to file.
-        File file = new File(modelStoragePath);
+        File file = new File(GetModelStoragePath());
         if (!file.exists()) {
             file.getParentFile().mkdirs();
             file.createNewFile();
@@ -58,5 +60,34 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
         FileWriter writer = new FileWriter(file);
         writer.write(lambdaMART.rerankerString());
         writer.close();
+    }
+
+    @Test
+    void test100() throws IOException {
+        CHEATNUMBER = 100;
+        train();
+        this.Test();
+    }
+
+
+    @Test
+    void test500() throws IOException {
+        CHEATNUMBER = 500;
+        train();
+        this.Test();
+    }
+
+    @Test
+    void test1000() throws IOException {
+        CHEATNUMBER = 1000;
+        train();
+        this.Test();
+    }
+
+    @Test
+    void test2000() throws IOException {
+        CHEATNUMBER = 2000;
+        train();
+        this.Test();
     }
 }

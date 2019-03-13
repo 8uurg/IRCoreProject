@@ -1,10 +1,14 @@
-package analysis;
-
+import index.IndexFactory;
 import irproject.ICompletionAlgorithm;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.junit.jupiter.api.Test;
 import reader.DataReader;
 import reader.SearchQuery;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -18,8 +22,9 @@ public abstract class BaseTest {
     private long randomSeed = 123123123;
 
     Random r = new Random(randomSeed);
-    public final static int TESTSIZE = 2000;
-    public final boolean ENABLE_PRINT = true;
+    public final static int TESTSIZE = 10000;
+    public final boolean ENABLE_PRINT = false;
+    public boolean ONLY_NEW = false;
     public final int K = 10;
 
     @Test
@@ -27,8 +32,20 @@ public abstract class BaseTest {
         OriginalMetric();
     }
 
+    @Test
+    void TestOnlyNew() throws IOException {
+        ONLY_NEW = true;
+        OriginalMetric();
+    }
+
     public void OriginalMetric() throws IOException {
         DataReader reader = new DataReader(GetFile("user-ct-test-collection-10.txt"));
+
+        IndexSearcher searcher = null;
+        if (ONLY_NEW) {
+            searcher = IndexFactory.ReadIndex("QueryIndex");
+        }
+
 
         SearchQuery query;
         double MRR = 0;
@@ -40,6 +57,17 @@ public abstract class BaseTest {
 
         for (int i = 0; i < TESTSIZE; i++) {
             query = reader.ReadLine();
+
+            if (ONLY_NEW) {
+                 TopDocs docs =  searcher.search(new TermQuery(new Term("query",query.Query)), 1);
+                 if(docs.scoreDocs.length > 0) {
+                     String val = searcher.doc(docs.scoreDocs[0].doc).get("query");
+                     if(val.equals(query.Query)) {
+                         continue;
+                     }
+                 }
+            }
+
             final String originalQ = query.Query;
             String q = CutOff(query.Query);
             if(q.equals(query.Query)) {
@@ -81,7 +109,7 @@ public abstract class BaseTest {
             }
 
             if(!ENABLE_PRINT) {
-                if (i % 300 == 0) {
+                if (i % 500 == 0) {
                     System.out.println(i);
                 }
             }
@@ -132,7 +160,7 @@ public abstract class BaseTest {
 
     public String[] getTrainingQueries() throws IOException {
         DataReader reader = new DataReader(GetFile("samples.txt"));
-        ArrayList<String> queries = new ArrayList<>(500);
+        ArrayList<String> queries = new ArrayList<>(4000);
         SearchQuery current;
         while ((current = reader.ReadLine()) != null) {
             queries.add(current.Query);
@@ -147,5 +175,45 @@ public abstract class BaseTest {
 
     private String GetFile(String name) {
         return this.getClass().getClassLoader().getResource(name).getPath();
+    }
+
+    protected static void delete(File file)
+            throws IOException{
+
+        if(file.isDirectory()){
+
+            //directory is empty, then delete it
+            if(file.list().length==0){
+
+                file.delete();
+                System.out.println("Directory is deleted : "
+                        + file.getAbsolutePath());
+
+            }else{
+
+                //list all the directory contents
+                String files[] = file.list();
+
+                for (String temp : files) {
+                    //construct the file structure
+                    File fileDelete = new File(file, temp);
+
+                    //recursive delete
+                    delete(fileDelete);
+                }
+
+                //check the directory again, if empty then delete it
+                if(file.list().length==0){
+                    file.delete();
+                    System.out.println("Directory is deleted : "
+                            + file.getAbsolutePath());
+                }
+            }
+
+        }else{
+            //if file, then delete it
+            file.delete();
+            //System.out.println("File is deleted : " + file.getAbsolutePath());
+        }
     }
 }
