@@ -173,9 +173,11 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             Document document = suffixsearcher.doc(scoreDoc.doc);
             // Build a string for the DenseDataPoint to parse again...
             StringBuilder docDataPoint = new StringBuilder();
+            // Is a suffix!
             String docQuery = document.get("query");
+            String completedDocQuery = query + docQuery.substring(getEndTerm(query).length());
             // First floating point value is the relevance.
-            float relevance = getRelevance(originalQuery, docQuery);
+            float relevance = getRelevance(originalQuery, completedDocQuery);
             if (relevance > 0.0f) {
                 hasRelevantItem = true;
             }

@@ -61,7 +61,11 @@ public class IndexFactory {
             }
             AddToIndex(iwriter, key, oc);
             NgramPreprocess(nwriter, key, oc);
-            SuffixPreprocess(pwriter, key, oc);
+            SuffixPreprocess(key, oc, prefixMap);
+        }
+
+        for(String key : prefixMap.keySet()) {
+            AddToIndex(pwriter, key, prefixMap.get(key));
         }
 
         iwriter.close();
@@ -87,16 +91,15 @@ public class IndexFactory {
         }
     }
 
-    public  static void SuffixPreprocess(IndexWriter pwriter, String key, int value) throws IOException {
-        List<String> list2 = Arrays.asList(key.split(" "));
+    public  static void SuffixPreprocess(String key, int value, HashMap<String, Integer> prefixMap) {         List<String> list2 = Arrays.asList(key.split(" "));
         Collections.reverse(list2);
         ArrayList<String> list = new ArrayList<String>(list2);
         String soFar = "";
         while(list.size() > 0) {
             soFar = list.remove(0) + " " + soFar;
-            for (int i = 0; i < value; i++) {
-                AddToIndex(pwriter, soFar, 1);
-            }
+            soFar = soFar.trim();
+            int val = prefixMap.getOrDefault(soFar, 0);
+            prefixMap.put(soFar, val + value);
         }
     }
 
