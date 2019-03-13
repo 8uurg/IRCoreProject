@@ -6,6 +6,7 @@ import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.metric.ReciprocalRankScorer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -131,16 +132,21 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     public float calculateNGramFeature(String fullquery, int n) throws IOException {
         StandardTokenizer source = new StandardTokenizer();
         source.setReader(new StringReader(fullquery));
-        ShingleFilter shingleFilter = new ShingleFilter(source, n, n);
-        shingleFilter.setOutputUnigrams(false);
+        TokenStream filtered;
+        if (n > 2) {
+            ShingleFilter shingleFilter = new ShingleFilter(source, n, n);
+            shingleFilter.setOutputUnigrams(false);
+            filtered = shingleFilter;
+        } else {
+            filtered = source;
+        }
 
-        CharTermAttribute charTermAttribute = shingleFilter.addAttribute(CharTermAttribute.class);
-        shingleFilter.setOutputUnigrams(false);
+        CharTermAttribute charTermAttribute = filtered.addAttribute(CharTermAttribute.class);
 
         // Use long, frequency is the number of occurences.
         long result = 0L;
-        shingleFilter.reset();
-        while(shingleFilter.incrementToken()) {
+        filtered.reset();
+        while(filtered.incrementToken()) {
             String token = charTermAttribute.toString();
             result += ngramsearcher.getIndexReader().getSumTotalTermFreq(token);
         }
