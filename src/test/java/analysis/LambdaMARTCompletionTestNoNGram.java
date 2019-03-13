@@ -36,8 +36,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
 
     @Test
     public void train() throws IOException {
-        // TODO: Actually pass the indices!
-        LambdaMARTAutocomplete lambdaMART = new LambdaMARTAutocomplete(null ,null);
+        LambdaMARTAutocomplete lambdaMART = (LambdaMARTAutocomplete) this.GetAlgorithm();
         // TODO: Actually add some queries here!
         String[] originalqueries = new String[]{};
         String[] queries = new String[originalqueries.length];
