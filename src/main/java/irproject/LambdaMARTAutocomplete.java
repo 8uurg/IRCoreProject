@@ -168,13 +168,18 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         if (scoreDocs.length == 0) {
             return null;
         }
+        boolean hasRelevantItem = false;
         for (ScoreDoc scoreDoc : scoreDocs) {
             Document document = suffixsearcher.doc(scoreDoc.doc);
             // Build a string for the DenseDataPoint to parse again...
             StringBuilder docDataPoint = new StringBuilder();
             String docQuery = document.get("query");
             // First floating point value is the relevance.
-            docDataPoint.append(getRelevance(originalQuery, docQuery));
+            float relevance = getRelevance(originalQuery, docQuery);
+            if (relevance > 0.0f) {
+                hasRelevantItem = true;
+            }
+            docDataPoint.append(relevance);
             docDataPoint.append(' ');
             // Second is an ID.
             docDataPoint.append(':');
@@ -196,6 +201,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             dataPoints.add(dp);
         }
 
+        // Meh!
+        if (!hasRelevantItem)
+            return null;
+
         return new RankList(dataPoints);
     }
 
@@ -210,6 +219,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             if (rankList != null) {
                 samples.add(rankList);
             }
+        }
+
+        if(samples.size() == 0) {
+            throw new RuntimeException("Make sure at least one valid (has items, has at least one relevant item) sample is present.");
         }
 
         reranker = new LambdaMART(samples, this.usedfeatures, this.scorer);
