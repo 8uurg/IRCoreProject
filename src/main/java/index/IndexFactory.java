@@ -29,21 +29,21 @@ public class IndexFactory {
         Analyzer analyzer = new KeywordAnalyzer();
 
         Path indexPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "QueryIndex"));
-        Path prefixPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "PrefixIndex"));
+        Path suffixPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "SuffixIndex"));
         Path ngramPath = Files.createDirectory(Paths.get(System.getProperty("java.io.tmpdir") + "NgramIndex"));
         Directory indexDirectory = FSDirectory.open(indexPath);
-        Directory prefixDirectory = FSDirectory.open(prefixPath);
+        Directory suffixDirectory = FSDirectory.open(suffixPath);
         Directory ngramDirectory = FSDirectory.open(ngramPath);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriterConfig config2 = new IndexWriterConfig(analyzer);
         IndexWriterConfig config3 = new IndexWriterConfig(analyzer);
         IndexWriter iwriter = new IndexWriter(indexDirectory, config);
-        IndexWriter pwriter = new IndexWriter(prefixDirectory, config2);
+        IndexWriter swriter = new IndexWriter(suffixDirectory, config2);
         IndexWriter nwriter = new IndexWriter(ngramDirectory, config3);
 
         HashMap<String, Integer> map = new HashMap<>();
-        HashMap<String, Integer> prefixMap = new HashMap<>();
-        HashMap<String, Integer> ngramMap = new HashMap<>();
+        HashMap<String, Integer> suffixMap = new HashMap<>();
+
         for(DataReader reader : readers) {
             Preprocess(reader, map);
         }
@@ -61,15 +61,15 @@ public class IndexFactory {
             }
             AddToIndex(iwriter, key, oc);
             NgramPreprocess(nwriter, key, oc);
-            SuffixPreprocess(key, oc, prefixMap);
+            SuffixPreprocess(key, oc, suffixMap);
         }
 
-        for(String key : prefixMap.keySet()) {
-            AddToIndex(pwriter, key, prefixMap.get(key));
+        for(String key : suffixMap.keySet()) {
+            AddToIndex(swriter, key, suffixMap.get(key));
         }
 
         iwriter.close();
-        pwriter.close();
+        swriter.close();
         nwriter.close();
     }
 
@@ -127,7 +127,7 @@ public class IndexFactory {
 
     public static void DeleteIfExists() throws IOException {
         delete(new File(System.getProperty("java.io.tmpdir") + "QueryIndex"));
-        delete(new File(System.getProperty("java.io.tmpdir") + "PrefixIndex"));
+        delete(new File(System.getProperty("java.io.tmpdir") + "SuffixIndex"));
         delete(new File(System.getProperty("java.io.tmpdir") + "NgramIndex"));
     }
 

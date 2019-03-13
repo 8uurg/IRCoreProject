@@ -14,7 +14,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
     @Override
     ICompletionAlgorithm GetAlgorithm() throws IOException {
 
-        IndexSearcher searcher = IndexFactory.ReadIndex("PrefixIndex");
+        IndexSearcher searcher = IndexFactory.ReadIndex("SuffixIndex");
         LambdaMARTAutocomplete autocomplete = new LambdaMARTAutocomplete(searcher, null);
         // Load the model
         try {
@@ -36,7 +36,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
 
     @Test
     public void train() throws IOException {
-        IndexSearcher searcher = IndexFactory.ReadIndex("PrefixIndex");
+        IndexSearcher searcher = IndexFactory.ReadIndex("SuffixIndex");
         LambdaMARTAutocomplete lambdaMART = new LambdaMARTAutocomplete(searcher, null);
         String[] originalqueries = this.getTrainingQueries();
         String[] queries = new String[originalqueries.length];
