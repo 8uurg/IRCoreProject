@@ -36,7 +36,8 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
 
     @Test
     public void train() throws IOException {
-        LambdaMARTAutocomplete lambdaMART = (LambdaMARTAutocomplete) this.GetAlgorithm();
+        IndexSearcher searcher = IndexFactory.ReadIndex("PrefixIndex");
+        LambdaMARTAutocomplete lambdaMART = new LambdaMARTAutocomplete(searcher, null);
         String[] originalqueries = this.getTrainingQueries();
         String[] queries = new String[originalqueries.length];
         // Actually generate the cut off queries.

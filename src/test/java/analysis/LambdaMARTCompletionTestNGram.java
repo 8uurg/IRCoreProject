@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.io.*;
 
 public class LambdaMARTCompletionTestNGram extends BaseTest {
-    private String modelStoragePath = System.getProperty("java.io.tmpdir") + "LambdaMART/LambdaMARTNoNGram.txt";
+    private String modelStoragePath = System.getProperty("java.io.tmpdir") + "LambdaMART/LambdaMARTNGram.txt";
 
     @Override
     ICompletionAlgorithm GetAlgorithm() throws IOException {
@@ -37,7 +37,10 @@ public class LambdaMARTCompletionTestNGram extends BaseTest {
 
     @Test
     public void train() throws IOException {
-        LambdaMARTAutocomplete lambdaMART = (LambdaMARTAutocomplete) this.GetAlgorithm();
+        IndexSearcher searcher = IndexFactory.ReadIndex("PrefixIndex");
+        IndexSearcher ngramsearcher = IndexFactory.ReadIndex("NgramIndex");
+        LambdaMARTAutocomplete lambdaMART = new LambdaMARTAutocomplete(searcher, ngramsearcher);
+
         String[] originalqueries = this.getTrainingQueries();
         String[] queries = new String[originalqueries.length];
         // Actually generate the cut off queries.
