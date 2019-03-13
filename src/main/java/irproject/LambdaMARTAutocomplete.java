@@ -72,7 +72,8 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         int an = Math.min(n, n2);
         String[] result = new String[an];
         for (int i = 0; i < an; i++) {
-            result[i] = rankedList.get(i).getID();
+            String desc = rankedList.get(i).getDescription();
+            result[i] =  desc.substring(0, desc.length()-2);
         }
         return result;
     }
@@ -214,6 +215,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             }
             DenseDataPoint dp = new DenseDataPoint(docDataPoint.toString());
             dp.setLabel(relevance);
+            dp.setDescription(completedDocQuery + '#');
             dataPoints.add(dp);
         }
 
