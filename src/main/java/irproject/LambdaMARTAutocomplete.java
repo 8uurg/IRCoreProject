@@ -57,9 +57,17 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             throw new RuntimeException("Please train or load the reranker before usage.");
         }
         // We do not know the original query in this case. So originalquery is the empty string.
-        RankList rankList = this.queryToRankList(query, "");
+        RankList rankList = this.queryToRankList(query, "", false);
+
+        if (rankList == null) {
+            return new String[]{};
+        }
+        int n2 = rankList.size();
+        if (n2 == 0) {
+            return new String[]{};
+        }
         RankList rankedList = reranker.rank(rankList);
-        int n2 = rankedList.size();
+
         int an = Math.min(n, n2);
         String[] result = new String[an];
         for (int i = 0; i < an; i++) {
@@ -166,7 +174,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         return query.equals(document)?1.0f:0.0f;
     }
 
-    protected RankList queryToRankList(String query, String originalQuery) throws IOException {
+    protected RankList queryToRankList(String query, String originalQuery, boolean returnNullIfNoRelevant) throws IOException {
         TopDocs docs = this.simplequery(query, nRerank);
         ScoreDoc[] scoreDocs = docs.scoreDocs;
         ArrayList<DataPoint> dataPoints = new ArrayList<>();
@@ -209,7 +217,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         }
 
         // Meh!
-        if (!hasRelevantItem)
+        if (!hasRelevantItem && returnNullIfNoRelevant)
             return null;
 
         return new RankList(dataPoints);
@@ -221,7 +229,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         for (int i = 0; (i < queries.length) && (i < originalQueries.length); i++) {
             String query = queries[i];
             String originalQuery = originalQueries[i];
-            RankList rankList = this.queryToRankList(query, originalQuery);
+            RankList rankList = this.queryToRankList(query, originalQuery, true);
             // If no results found. Null is returned.
             if (rankList != null) {
                 samples.add(rankList);
