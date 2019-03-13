@@ -50,6 +50,10 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
         lambdaMART.train(queries, originalqueries);
         // Dump result of training to file.
         File file = new File(modelStoragePath);
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+            file.createNewFile();
+        }
         FileWriter writer = new FileWriter(file);
         writer.write(lambdaMART.rerankerString());
         writer.close();

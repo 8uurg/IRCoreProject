@@ -21,6 +21,11 @@ public class DataReader {
     public SearchQuery ReadLine() throws IOException {
         String currentLine = br.readLine();
 
+        while (currentLine != null && currentLine.trim().equals("")) {
+            currentLine = br.readLine();
+        }
+
+
         if(currentLine == null) {
             try {
 

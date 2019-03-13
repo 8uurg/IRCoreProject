@@ -30,11 +30,11 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     public LambdaMARTAutocomplete(IndexSearcher suffixsearcher, IndexSearcher ngramsearcher) {
         this.suffixsearcher = suffixsearcher;
         if (ngramsearcher == null) {
-            usedfeatures = new int[]{0, 1, 2, 3, 4};
+            usedfeatures = new int[]{1, 2, 3, 4, 5};
         } else {
             this.ngramsearcher = ngramsearcher;
             // Can actually compute and use ngram feature!
-            usedfeatures = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+            usedfeatures = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
         }
     }
 
@@ -83,7 +83,9 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
     public TopDocs simplequery(String query, int n) {
         try {
             // TODO: Sort?
-            return suffixsearcher.search(new PrefixQuery(new Term("query", getEndTerm(query))), n);
+            TopDocs td = suffixsearcher.search(new PrefixQuery(new Term("query", getEndTerm(query))), n);
+
+            return td;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -162,6 +164,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         TopDocs docs = this.simplequery(query, nRerank);
         ScoreDoc[] scoreDocs = docs.scoreDocs;
         ArrayList<DataPoint> dataPoints = new ArrayList<>();
+
+        if (scoreDocs.length == 0) {
+            return null;
+        }
         for (ScoreDoc scoreDoc : scoreDocs) {
             Document document = suffixsearcher.doc(scoreDoc.doc);
             // Build a string for the DenseDataPoint to parse again...
@@ -171,14 +177,23 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             docDataPoint.append(getRelevance(originalQuery, docQuery));
             docDataPoint.append(' ');
             // Second is an ID.
+            docDataPoint.append(':');
             docDataPoint.append(scoreDoc.doc);
             docDataPoint.append(' ');
             // All successive floating point values are features.
-            for (float feature : extractFeatures(document, query)) {
+            int i = 1;
+            float[] features = extractFeatures(document, query);
+            for (float feature : features) {
+                docDataPoint.append(i);
+                docDataPoint.append(':');
                 docDataPoint.append(feature);
                 docDataPoint.append(' ');
+                i += 1;
             }
-            dataPoints.add(new DenseDataPoint(docDataPoint.toString()));
+            DenseDataPoint dp = new DenseDataPoint(docDataPoint.toString());
+            if (dp.getFeatureValue(2) != features[1])
+                System.out.println("Panic!");
+            dataPoints.add(dp);
         }
 
         return new RankList(dataPoints);
@@ -191,7 +206,10 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             String query = queries[i];
             String originalQuery = originalQueries[i];
             RankList rankList = this.queryToRankList(query, originalQuery);
-            samples.add(rankList);
+            // If no results found. Null is returned.
+            if (rankList != null) {
+                samples.add(rankList);
+            }
         }
 
         reranker = new LambdaMART(samples, this.usedfeatures, this.scorer);
