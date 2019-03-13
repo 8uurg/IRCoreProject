@@ -1,5 +1,6 @@
 package analysis;
 
+import ciir.umass.edu.learning.tree.LambdaMART;
 import index.IndexFactory;
 import irproject.ICompletionAlgorithm;
 import irproject.LambdaMARTAutocomplete;
@@ -13,7 +14,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
 
     @Override
     ICompletionAlgorithm GetAlgorithm() throws IOException {
-
+        LambdaMART.verbose = false;
         IndexSearcher searcher = IndexFactory.ReadIndex("SuffixIndex");
         LambdaMARTAutocomplete autocomplete = new LambdaMARTAutocomplete(searcher, null);
         // Load the model

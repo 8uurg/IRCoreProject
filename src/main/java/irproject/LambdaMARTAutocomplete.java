@@ -67,6 +67,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
             return new String[]{};
         }
         RankList rankedList = reranker.rank(rankList);
+        //RankList rankedList = rankList;
 
         int an = Math.min(n, n2);
         String[] result = new String[an];
