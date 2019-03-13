@@ -62,7 +62,7 @@ public abstract class BaseTest {
     }
 
     public String[] getTrainingQueries() throws IOException {
-        DataReader reader = new DataReader(GetFile("user-ct-test-collection-9.txt"));
+        DataReader reader = new DataReader(GetFile("user-ct-test-collection-09.txt"));
         ArrayList<String> queries = new ArrayList<>(2000);
         SearchQuery current;
         while ((current = reader.ReadLine()) != null) {
