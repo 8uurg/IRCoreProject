@@ -8,6 +8,7 @@ import reader.DataReader;
 import reader.SearchQuery;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -58,6 +59,17 @@ public abstract class BaseTest {
             return s;
         }
         return s.substring(0, r.nextInt(s.length()-1) + 1);
+    }
+
+    public String[] getTrainingQueries() throws IOException {
+        DataReader reader = new DataReader(GetFile("user-ct-test-collection-9.txt"));
+        ArrayList<String> queries = new ArrayList<>(2000);
+        SearchQuery current;
+        while ((current = reader.ReadLine()) != null) {
+            queries.add(current.Query);
+        }
+        String[] a = new String[]{};
+        return queries.toArray(a);
     }
 
     public void resetSeed() {

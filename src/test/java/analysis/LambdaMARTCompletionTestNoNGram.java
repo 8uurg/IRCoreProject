@@ -37,8 +37,7 @@ public class LambdaMARTCompletionTestNoNGram extends BaseTest {
     @Test
     public void train() throws IOException {
         LambdaMARTAutocomplete lambdaMART = (LambdaMARTAutocomplete) this.GetAlgorithm();
-        // TODO: Actually add some queries here!
-        String[] originalqueries = new String[]{};
+        String[] originalqueries = this.getTrainingQueries();
         String[] queries = new String[originalqueries.length];
         // Actually generate the cut off queries.
         resetSeed();
