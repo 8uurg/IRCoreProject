@@ -120,7 +120,7 @@ public class LambdaMARTAutocomplete implements ICompletionAlgorithm {
         } else {
             float[] features = new float[]{occurences, prefix_length, suffix_length, total_length, endsinspace, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
             String fullquery = query.subSequence(0, query.length() - endTerm.length()).toString();
-            for (int i = 0; i < 6; i++) {
+            for (int i = 2; i < 6; i++) {
                 // We already have 5 features.
                 features[i+5] = calculateNGramFeature(fullquery, i+1);
             }
